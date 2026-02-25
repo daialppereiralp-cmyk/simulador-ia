@@ -12,7 +12,7 @@ try:
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except:
     GEMINI_API_KEY = "AIzaSyBLk4ic18Tky9Ogtx1VNHysZ1GrRII9ECI"
-    SUPABASE_URL = "qxqzoplkffauaplkjogb"
+    SUPABASE_URL = "https://supabase.com/dashboard/project/qxqzoplkffauaplkjogb"
     SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4cXpvcGxrZmZhdWFwbGtqb2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5ODgxMzksImV4cCI6MjA4NzU2NDEzOX0.CnL6j9s7BeGOyilmWQdmz8xCGpLM8lAtlS1cULC4b-c"
 
 
@@ -142,4 +142,5 @@ elif menu == "Meu Progresso":
     else:
 
         st.info("Você ainda não fez nenhum simulado.")
+
 
