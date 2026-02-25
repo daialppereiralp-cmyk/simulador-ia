@@ -1,0 +1,6 @@
+streamlit
+google-generativeai
+fpdf
+supabase
+pandas
+plotly
