@@ -6,9 +6,6 @@ import json
 import pandas as pd
 import plotly.express as px
 
-# --- 1. CONFIGURAÇÕES DE SEGURANÇA ---
-# O código tentará ler dos "Secrets" do Streamlit Cloud. 
-# Se você for testar no PC, preencha as aspas ou configure variáveis de ambiente.
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -18,17 +15,16 @@ except:
     SUPABASE_URL = "SUA_URL_AQUI"
     SUPABASE_KEY = "SUA_CHAVE_AQUI"
 
-# Inicialização das APIs
+
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- 2. FUNÇÕES TÉCNICAS (Cérebro do App) ---
 
 def gerar_questoes_ia(tema, qtd):
-    """Solicita questões à IA Gemini"""
+    """Solicita questÃµes Ã  IA Gemini"""
     prompt = f"""
-    Gere {qtd} questões de múltipla escolha sobre '{tema}' para concurso público.
+    Gere {qtd} questÃµes de mÃºltipla escolha sobre '{tema}' para concurso pÃºblico.
     Retorne APENAS um JSON puro (sem markdown) no formato:
     [
       {{"pergunta": "texto", "opcoes": ["A) ", "B) ", "C) ", "D) "], "resposta": "letra_maiuscula"}}
@@ -53,13 +49,11 @@ def gerar_pdf(questoes, tema):
             pdf.cell(0, 8, txt=opt, ln=True)
     return pdf.output(dest='S').encode('latin-1')
 
-# --- 3. INTERFACE E NAVEGAÇÃO ---
 
 st.set_page_config(page_title="AprovaIA - Simulados", layout="wide")
 
-# Verificação de Login
 if 'user' not in st.session_state:
-    st.title("?? AprovaIA: Simulados com Inteligência")
+    st.title("?? AprovaIA: Simulados com InteligÃªncia")
     tab_log, tab_reg = st.tabs(["Login", "Criar Conta"])
     
     with tab_log:
@@ -70,7 +64,7 @@ if 'user' not in st.session_state:
                 res = supabase.auth.sign_in_with_password({"email": e, "password": p})
                 st.session_state.user = res.user
                 st.rerun()
-            except: st.error("Login inválido.")
+            except: st.error("Login invÃ¡lido.")
 
     with tab_reg:
         ne = st.text_input("Novo Email")
@@ -82,9 +76,8 @@ if 'user' not in st.session_state:
             except: st.error("Erro ao cadastrar.")
     st.stop()
 
-# --- ÁREA LOGADA ---
 st.sidebar.title(f"?? {st.session_state.user.email}")
-menu = st.sidebar.radio("Navegação", ["Criar Simulado", "Meu Progresso", "Sair"])
+menu = st.sidebar.radio("NavegaÃ§Ã£o", ["Criar Simulado", "Meu Progresso", "Sair"])
 
 if menu == "Sair":
     supabase.auth.sign_out()
@@ -94,23 +87,23 @@ if menu == "Sair":
 elif menu == "Criar Simulado":
     st.header("?? Gerador de Provas")
     tema = st.text_input("Qual o assunto da prova?", placeholder="Ex: Direito Constitucional")
-    qtd = st.select_slider("Número de questões", options=[5, 10, 15, 20])
+    qtd = st.select_slider("NÃºmero de questÃµes", options=[5, 10, 15, 20])
 
     if st.button("Gerar Simulado com IA"):
-        with st.spinner("A IA está criando as questões..."):
+        with st.spinner("A IA estÃ¡ criando as questÃµes..."):
             try:
                 st.session_state.questoes = gerar_questoes_ia(tema, qtd)
                 st.session_state.tema_atual = tema
             except Exception as e:
-                st.error("Erro ao gerar questões. Tente novamente.")
+                st.error("Erro ao gerar questÃµes. Tente novamente.")
 
     if 'questoes' in st.session_state:
         st.divider()
         respostas_usuario = []
         for i, q in enumerate(st.session_state.questoes):
-            st.subheader(f"Questão {i+1}")
+            st.subheader(f"QuestÃ£o {i+1}")
             st.write(q['pergunta'])
-            resp = st.radio("Selecione uma opção:", q['opcoes'], key=f"q_{i}", index=None)
+            resp = st.radio("Selecione uma opÃ§Ã£o:", q['opcoes'], key=f"q_{i}", index=None)
             respostas_usuario.append(resp)
         
         if st.button("Finalizar e Corrigir"):
@@ -125,7 +118,6 @@ elif menu == "Criar Simulado":
             nota = (acertos / len(st.session_state.questoes)) * 100
             st.metric("Resultado Final", f"{nota}%", f"{acertos} acertos")
             
-            # Salva no Banco de Dados
             supabase.table("simulados").insert({
                 "user_id": st.session_state.user.id,
                 "tema": st.session_state.tema_atual,
@@ -133,21 +125,20 @@ elif menu == "Criar Simulado":
                 "questoes": st.session_state.questoes
             }).execute()
 
-        # Download PDF
         pdf_data = gerar_pdf(st.session_state.questoes, st.session_state.tema_atual)
         st.download_button("?? Baixar Prova (PDF)", pdf_data, "prova.pdf", "application/pdf")
 
 elif menu == "Meu Progresso":
-    st.header("?? Evolução nos Estudos")
+    st.header("?? EvoluÃ§Ã£o nos Estudos")
     res = supabase.table("simulados").select("*").eq("user_id", st.session_state.user.id).execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        # Ajuste de data simples
         df['criado_em'] = pd.to_datetime(df['criado_em']).dt.strftime('%d/%m/%Y')
         
         fig = px.line(df, x='criado_em', y='nota', title='Desempenho por Simulado', markers=True)
         st.plotly_chart(fig, use_container_width=True)
         st.table(df[['tema', 'nota', 'criado_em']])
     else:
-        st.info("Você ainda não fez nenhum simulado.")
+
+        st.info("VocÃª ainda nÃ£o fez nenhum simulado.")
